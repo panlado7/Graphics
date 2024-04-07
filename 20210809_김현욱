@@ -1,0 +1,107 @@
+let cols, rows;
+let scl = 20;
+let w = 1400;
+let h = 1000;
+
+let flying = 0;
+
+let terrain = [];
+let planePos;
+
+function setup() {
+  createCanvas(600, 600, WEBGL);
+  cols = w / scl;
+  rows = h / scl;
+
+  for (let x = 0; x < cols; x++) {
+    terrain[x] = [];
+    for (let y = 0; y < rows; y++) {
+      terrain[x][y] = 0; //specify a default value for now
+    }
+  }
+   noStroke();
+
+  planePos = createVector(0, 0, 0); // 비행기 위치 초기화
+}
+
+function draw() {
+  flying -= 0.1;
+  let yoff = flying;
+  for (let y = 0; y < rows; y++) {
+    var xoff = 0;
+    for (let x = 0; x < cols; x++) {
+      terrain[x][y] = map(noise(xoff, yoff), 0, 1, -100, 100);
+      xoff += 0.2;
+    }
+    yoff += 0.2;
+  }
+  background(0, 128, 255);
+  rotateX(PI / 3);
+  fill(164, 164, 164, 196);
+  translate(-w / 2, -h / 2);
+  for (let y = 0; y < rows - 1; y++) {
+    beginShape(TRIANGLE_STRIP);
+    for (let x = 0; x < cols; x++) {
+      let v = terrain[x][y];
+      fill(255, 255, 255, 150);
+      vertex(x * scl, y * scl, terrain[x][y]);
+      vertex(x * scl, (y + 1) * scl, terrain[x][y + 1]);
+    }
+    endShape();
+  }
+  
+  // 비행기 그리기
+  push();
+  translate(planePos.x, planePos.y, planePos.z);
+  rotateX(PI / 3);
+  fill(255);
+  // 원 그리기
+  for (let i = 0; i < 2; i++) {
+    beginShape();
+    for (let j = 0; j < TWO_PI; j += PI) {
+      let x = cos(j) * 20 * (i + 1);
+      let y = sin(j) * 20;
+      let z = i * 20 - 20;
+      vertex(x, y, z);
+    }
+    endShape(CLOSE);
+  }
+  // 삼각형 그리기
+  beginShape();
+  vertex(0, 0, -20);
+  vertex(-20, 0, -30);
+  vertex(20, 0, -30);
+  endShape(CLOSE);
+  pop();
+
+  // 마우스 위치에 따라 비행기 이동
+  let targetX = map(mouseX, 0, width, -width / 2, width / 2);
+  let targetY = map(mouseY, 0, height, -height / 2, height / 2);
+  planePos.x += (targetX - planePos.x) * 0.05;
+  planePos.y += (targetY - planePos.y) * 0.05;
+  
+  // 광원 효과 추가
+  push();
+  let sunSize = 100 + 20 * sin(frameCount * 0.05); // 태양 크기를 주기적으로 변화시킵니다.
+  translate(width * 2 - 200, -height / 2 - 100); // 캔버스 오른쪽 상단으로 이동
+  rotate(PI / 5);    
+  fill (252, 171, 54);
+  sphere(sunSize); 
+  
+  // 주변에 일그러지는 효과 추가
+  let detail = 0.05; // 광원 효과 세부 사항 조정
+  let distortion = 50; // 광원 효과 왜곡 정도 조정
+  let radius = sunSize * 1.5; // 광원 효과 범위 조정
+  let numPoints = 100;
+  for (let i = 0; i < numPoints; i++) {
+    let angle = map(i, 0, numPoints, 0, TWO_PI);
+    let xoff = cos(angle) * radius;
+    let yoff = sin(angle) * radius;
+    let n = noise(xoff * detail, yoff * detail);
+    let r = radius + map(n, 0, 1, -distortion, distortion);
+    let x = cos(angle) * r;
+    let y = sin(angle) * r;
+    ellipse(x, y, 5, 5);
+  }
+  pop(); // 도형을 추가 한다.
+}
